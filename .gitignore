@@ -1,0 +1,12 @@
+# Python Verzeichnisse
+venv/
+__pycache__/
+*.pyc
+
+# Mac OS Systemdateien
+.DS_Store
+
+# Output und temporäre Daten (wir wollen keine Laborergebnisse im Internet!)
+*.csv
+*.pdf
+*.log
