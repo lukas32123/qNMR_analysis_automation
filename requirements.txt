@@ -1,0 +1,11 @@
+# Datenverarbeitung und Mathematik
+pandas
+numpy
+scipy
+
+# Visualisierung
+matplotlib
+
+# Excel / CSV Handling (falls Pandas im Hintergrund Tabellen exportieren/lesen muss)
+XlsxWriter
+openpyxl
