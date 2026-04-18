@@ -14,7 +14,26 @@ This tool bridges the gap between Mnova's internal C++ API and modern Python dat
 
 To ensure the pipeline runs smoothly without interfering with Mnova's internal Python interpreter (especially on macOS where external C-libraries are blocked), you must set up a local Virtual Environment.
 
-1. Clone this repository to your local machine:
-   ```bash
-   git clone [https://github.com/lukas32123/qNMR_analysis_automation.git](https://github.com/lukas32123/qNMR_analysis_automation.git)
+1. Clone this repository to your local machine (open a Terminal):
+2. 
+git clone [https://github.com/lukas32123/qNMR_analysis_automation.git](https://github.com/lukas32123/qNMR_analysis_automation.git)
    cd qNMR_analysis_automation
+
+3. Create a virtual environment named venv:
+   
+# On macOS/Linux
+python3 -m venv venv
+
+# On Windows
+python -m venv venv
+
+3. Activate the environment and install dependencies:
+
+# On macOS/Linux
+source venv/bin/activate
+
+# On Windows
+venv\Scripts\activate
+
+# Install required packages
+pip install pandas numpy matplotlib scipy XlsxWriter openpyxl
