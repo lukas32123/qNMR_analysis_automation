@@ -2,51 +2,74 @@ import sys
 import subprocess
 import pathlib
 
-# Pfade ermitteln
 SCRIPT_PATH = pathlib.Path(__file__).parent.resolve()
 SRC_PATH = SCRIPT_PATH / "src"
 
-# Damit wir MnovaExtractor importieren können
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
 from extractors.mnova import MnovaExtractor
 from exporters.csv_exporter import CSVExporter
+from MnovaNMR import NMRPlugin # NEU: Um die Markierungen aus Mnova zu lesen
 
 def get_python_executable():
-    """Findet das venv systemübergreifend."""
     if sys.platform == "win32":
         return SCRIPT_PATH / "venv" / "Scripts" / "python.exe"
     return SCRIPT_PATH / "venv" / "bin" / "python"
+
+def export_integration_ranges(filepath):
+    """Liest die aktuell gezogenen Integrale aus Mnova aus."""
+    nmrPlg = NMRPlugin()
+    activeItem = nmrPlg.activeNMRItem()
+    if not activeItem:
+        return False
+        
+    spectrum = activeItem.activeSpectrum
+    integrals = spectrum.getIntegrals()
+    
+    with open(filepath, 'w', encoding='utf-8') as f:
+        for integral in integrals:
+            # Dank unserer Debug-Ausgabe wissen wir jetzt: 
+            # Die Attribute heißen 'rangeMin' und 'rangeMax'
+            
+            # Sicherheitscheck: Mnova mischt manchmal Properties (Wert) und Methoden (Funktion).
+            # Wir prüfen kurz, ob wir Klammern () anhängen müssen oder nicht.
+            p1 = integral.rangeMin() if callable(integral.rangeMin) else integral.rangeMin
+            p2 = integral.rangeMax() if callable(integral.rangeMax) else integral.rangeMax
+            
+            # Sicherstellen, dass Start der kleinere Wert ist
+            start = min(p1, p2)
+            end = max(p1, p2)
+            f.write(f"{start};{end}\n")
+            
+    return True
 
 def main():
     print("--- NMR Pipeline gestartet ---")
     
     try:
-        # SCHRITT 1: Extraktion in Mnova
         csv_path = SCRIPT_PATH / "nmr_spectrum.csv"
+        ranges_path = SCRIPT_PATH / "ranges.csv"
+        
+        print("Schritt 1: Extrahiere Spektrum und Integrationsbereiche...")
+        # 1. Spektrum exportieren
         extractor = MnovaExtractor()
         exporter = CSVExporter(str(csv_path))
         exporter.export(extractor.get_all_data())
         
-        # SCHRITT 2: Subprozess starten
+        # 2. Ranges exportieren (NEU)
+        export_integration_ranges(str(ranges_path))
+        
+        print("Schritt 2: Starte Hintergrund-Berechnungen...")
         python_bin = get_python_executable()
         orchestrator_script = SRC_PATH / "orchestrator.py"
         
-        if not python_bin.exists():
-            print(f"\n[FEHLER] Virtual environment nicht gefunden unter {python_bin}")
-            return
-
-        print("Starte Hintergrund-Berechnungen...")
-        
-        # NEU: Wir rufen einfach die Datei auf, das ist absolut fehlerfrei!
         result = subprocess.run(
             [str(python_bin), str(orchestrator_script)], 
             capture_output=True, 
             text=True
         )
         
-        # Konsolenausgabe des Subprozesses anzeigen
         if result.returncode == 0:
             print("\n>>> PIPELINE ERFOLGREICH BEENDET!")
             print(result.stdout)
