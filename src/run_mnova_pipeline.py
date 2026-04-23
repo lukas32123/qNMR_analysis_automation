@@ -2,28 +2,33 @@ import sys
 import os
 import subprocess
 
-# 1. Pfade zum src-Ordner für die Mnova-Extraktoren
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+# ==========================================
+# DYNAMISCHE PFADERMITTLUNG
+# ==========================================
+# __file__ ist der absolute Pfad zu diesem Skript (run_mnova_pipeline.py).
+# os.path.dirname schneidet den Dateinamen ab und gibt uns den Ordner, in dem das Skript liegt.
+# Wir gehen davon aus, dass dieses Skript direkt im Projekt-Hauptordner liegt.
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+# 1. Pfade für die Mnova-Extraktoren zum Systempfad hinzufügen, 
+# damit Python die Module "extractors" und "exporters" findet.
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 from extractors.mnova import MnovaExtractor
 from exporters.csv_exporter import CSVExporter
 
 # ==========================================
-# KONFIGURATION (Hier passt du die Pfade für das Deployment an)
+# KONFIGURATION 
 # ==========================================
-# Der Hauptordner deines Projekts
-PROJECT_ROOT = "/Users/lukas/FH_Aachen_Job" 
-
 # Der Name deines Virtual Environments (oft ".venv" oder "venv")
-VENV_NAME = "venv" # <--- Bitte anpassen, falls dein venv anders heißt!
+VENV_NAME = "venv" 
 
 export_path = os.path.join(PROJECT_ROOT, "nmr_spectrum.csv")
 pipeline_script = os.path.join(PROJECT_ROOT, "src", "pipeline.py")
 
 def get_venv_python():
-    """Findet den korrekten Python-Interpreter je nach Betriebssystem."""
+    """Findet den korrekten Python-Interpreter je nach Betriebssystem dynamisch im Projektordner."""
     if sys.platform == "win32":
         # Windows Pfad: venv\Scripts\python.exe
         return os.path.join(PROJECT_ROOT, VENV_NAME, "Scripts", "python.exe")
@@ -33,6 +38,7 @@ def get_venv_python():
 
 def main():
     print("--- Starting One-Click NMR Pipeline ---")
+    print(f"Projektverzeichnis erkannt als: {PROJECT_ROOT}") # Hilfreich fürs Debugging bei neuen Usern!
     
     try:
         # SCHRITT 1 & 2: EXTRAKTION UND EXPORT (läuft in Mnova)
@@ -56,7 +62,6 @@ def main():
             return
 
         # Führe die externe pipeline.py im Hintergrund aus
-        # subprocess.run wartet, bis die PDF fertig ist
         result = subprocess.run(
             [python_executable, pipeline_script], 
             capture_output=True, 
