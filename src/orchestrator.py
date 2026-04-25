@@ -46,7 +46,7 @@ def run_pipeline():
     visualizer = NMRVisualizer(PROJECT_ROOT)
     visualizer.generate_all_reports(processor.df, results)
     
-    print(f"Erfolg! 3 PDFs gespeichert in: {PROJECT_ROOT}")
+    print(f"Erfolg! PDFs für die Analyse gespeichert in: {PROJECT_ROOT}")
 
 if __name__ == "__main__":
     run_pipeline()

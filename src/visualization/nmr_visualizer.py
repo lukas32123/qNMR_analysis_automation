@@ -30,8 +30,8 @@ class NMRVisualizer:
             full_df (pd.DataFrame): Vollständiger Datensatz.
             results (list): Liste der Peak-Ergebnisse.
         """
-        # 1. Globales Rohspektrum nur einmal erzeugen (außerhalb der Schleife)
-        self._plot_raw_spectrum(full_df)
+        # 1. Globales Rohspektrum nur einmal erzeugen
+        self._plot_raw_spectrum(full_df, results)
 
         # 2. Iteration über die Ergebnisse für spezialisierte Peak-Berichte
         for i, peak_result in enumerate(results):
@@ -39,15 +39,39 @@ class NMRVisualizer:
             self._plot_integrated_spectrum(full_df, peak_result, peak_id)
             self._plot_area_growth(peak_result, peak_id)
 
-    def _plot_raw_spectrum(self, full_df):
-        """Erzeugt ein einzelnes, globales PDF des gesamten Rohspektrums."""
+    def _plot_raw_spectrum(self, full_df, results):
+        """
+        Erzeugt das globale Rohspektrum, in dem alle integrierten 
+        Bereiche als durchgehende vertikale Bänder (Rechtecke) markiert sind.
+        """
         plt.figure(figsize=(10, 6))
-        plt.plot(full_df['ppm'], full_df['intensity'], color='black', lw=0.7)
+        
+        # Das Hauptspektrum (zorder=2 sorgt dafür, dass die schwarze Linie VOR den Farben liegt)
+        plt.plot(full_df['ppm'], full_df['intensity'], color='black', lw=0.7, zorder=2)
+        
+        # Farben für die verschiedenen Bereiche
+        colors = ['orange', 'steelblue', 'darkgreen', 'red', 'purple']
+        
+        # Alle Ranges aus den Ergebnissen als vertikale Bänder einzeichnen
+        for i, res in enumerate(results):
+            color = colors[i % len(colors)]
+            
+            # axvspan erzeugt ein Rechteck über die gesamte Höhe der Y-Achse
+            # Wir übergeben einfach die untere und obere Grenze auf der X-Achse
+            plt.axvspan(
+                res['lower_ppm'], 
+                res['upper_ppm'], 
+                alpha=0.3, 
+                color=color,
+                label=f"Peak {i+1}",
+                zorder=1
+            )
         
         plt.xlim(self.x_range_global)
         plt.xlabel('Chemical Shift [ppm]')
         plt.ylabel('Intensity [a.u.]')
-        plt.title('Global Raw NMR Spectrum')
+        plt.title('Global Raw NMR Spectrum with Highlighted Ranges')
+        plt.legend(loc='upper right', fontsize=8)
         
         plt.savefig(self.output_dir / "Raw_Spectrum.pdf")
         plt.close()
@@ -55,21 +79,21 @@ class NMRVisualizer:
     def _plot_integrated_spectrum(self, full_df, res, peak_id):
         """
         Erzeugt eine Detailansicht des integrierten Peaks. 
-        Die X-Achse wird dynamisch auf den Peak-Bereich ± 2 ppm gezoomt.
+        Die X-Achse wird dynamisch auf den Peak-Bereich ± 0.5 ppm gezoomt.
         """
         plt.figure(figsize=(10, 6))
         plt.plot(full_df['ppm'], full_df['intensity'], color='black', lw=0.5)
         
         peak_ppm = res['peak_ppm']
         label_text = (f"Peak {peak_id} at {peak_ppm:.3f} ppm\n"
-                      f"Range: {res['lower_ppm']} - {res['upper_ppm']}\n"
-                      f"Avg Area: {res['average_above']:.2f}")
+                      f"Range: {res['lower_ppm']:.4f} - {res['upper_ppm']:.4f}\n"
+                      f"Avg Area above {res['threshold']}%: {res['average_above']:.2f}")
         
         plt.fill_between(res['region_df']['ppm'], res['region_df']['intensity'], 
                          alpha=0.3, color='steelblue', label=label_text)
         
-        # Dynamischer Zoom: Peak-Zentrum +/- 2 ppm
-        # NMR-Konvention: Höherer Wert links (peak_ppm + 2), niedrigerer rechts (peak_ppm - 2)
+        # Dynamischer Zoom: Peak-Zentrum +/- 0.5 ppm
+        # NMR-Konvention: Höherer Wert links (peak_ppm + 0.5), niedrigerer rechts (peak_ppm - 0.5)
         plt.xlim(peak_ppm + 0.5, peak_ppm - 0.5)
         
         plt.xlabel('Chemical Shift [ppm]')
@@ -96,7 +120,7 @@ class NMRVisualizer:
         plt.ylabel('Area [%]')
         plt.ylim(97, 100) 
         plt.grid(True, alpha=0.3)
-        plt.title(f'Area Stability Analysis - Peak {peak_id}')
+        plt.title(f'Normalized increase of area by integration step - Peak {peak_id}')
         plt.legend(loc='lower right', fontsize=8)
         
         filename = f"Peak_{peak_id}_Area_Growth.pdf"
