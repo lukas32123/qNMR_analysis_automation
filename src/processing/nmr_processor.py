@@ -140,7 +140,7 @@ class NMRProcessor:
 
         # Kombinieren der beiden Teile zu einer Kurve [cite: 82]
         # Um die visuelle Symmetrie (wie in MATLAB und im Paper) zu erzeugen, wird die linke Seite gespiegelt
-        areas_left.reverse()
+        areas_right.reverse()
         combined_areas = np.array(areas_left + areas_right)
         
         total_area = np.max(combined_areas) if len(combined_areas) > 0 else 1
