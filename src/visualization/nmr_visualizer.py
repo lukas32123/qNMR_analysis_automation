@@ -37,7 +37,12 @@ class NMRVisualizer:
         for i, peak_result in enumerate(results):
             peak_id = i + 1
             self._plot_integrated_spectrum(full_df, peak_result, peak_id)
-            self._plot_area_growth(peak_result, peak_id)
+            self._plot_area_growth_profile_1(peak_result, peak_id)
+            
+            # NEU: Der Aufruf für Profil 2 fehlte noch!
+            if 'percent_growth_p2' in peak_result:
+                self._plot_area_growth_profile_2(peak_result, peak_id)
+
 
     def _plot_raw_spectrum(self, full_df, results):
         """
@@ -105,7 +110,7 @@ class NMRVisualizer:
         plt.savefig(self.output_dir / filename)
         plt.close()
 
-    def _plot_area_growth(self, res, peak_id):
+    def _plot_area_growth_profile_1(self, res, peak_id):
         """Visualisiert die Integrationsstabilität für den spezifischen Peak."""
         plt.figure(figsize=(10, 6))
         steps = range(1, len(res['percent_growth']) + 1)
@@ -124,5 +129,33 @@ class NMRVisualizer:
         plt.legend(loc='lower right', fontsize=8)
         
         filename = f"Peak_{peak_id}_Area_Growth.pdf"
+        plt.savefig(self.output_dir / filename)
+        plt.close()
+
+    def _plot_area_growth_profile_2(self, res, peak_id):
+        """
+        PDF für Profil 2: Klassische Integration von links nach rechts.
+        Optisch 1/1 wie Profil 1 aufgebaut.
+        """
+        plt.figure(figsize=(10, 6))
+        
+        # X-Achse wird automatisch doppelt so lang wie bei P1, da das Array größer ist
+        steps = range(1, len(res['percent_growth_p2']) + 1)
+        
+        plt.plot(steps, res['percent_growth_p2'], marker='.', markersize=2, 
+                 color='steelblue', label='Profile 2: Left-to-Right Growth')
+        
+        plt.axhline(y=res['threshold_p2'], color='red', linestyle='--', lw=1, 
+                    label=f'Threshold P2 ({res["threshold_p2"]}%)')
+            
+        plt.xlabel('Integration Step (Datapoints)')
+        plt.ylabel('Area [%]')
+        # Y-Limit exakt wie bei Profil 1!
+        plt.ylim(97, 100) 
+        plt.grid(True, alpha=0.3)
+        plt.title(f'Profile 2: Cumulative Area Growth - Peak {peak_id}')
+        plt.legend(loc='lower right', fontsize=8)
+        
+        filename = f"Peak_{peak_id}_Profile_2_Growth.pdf"
         plt.savefig(self.output_dir / filename)
         plt.close()
